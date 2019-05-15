@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Function;
 
 import javax.servlet.ServletException;
@@ -27,6 +29,10 @@ public class MavenServer {
 	private String localRepositoryPath = "\\src\\main\\resources";
 	private String remoteRepositoryURL;
 	private int port = 7777;
+	private Map<String, HttpServletEvent> beforeRequest = new HashMap<>();
+	private Map<String, HttpServletEvent> beforeProxy = new HashMap<>();
+	private Map<String, HttpServletEvent> afterProxy = new HashMap<>();
+	private Map<String, HttpServletEvent> afterRequest = new HashMap<>();
 
 	public MavenServer(int port, String localRepositoryPath, String remoteRepositoryURL) throws Exception {
 
@@ -38,11 +44,43 @@ public class MavenServer {
 
 	}
 
+	public void bindBeforeProxy(String key, HttpServletEvent event) {
+		beforeProxy.put(key, event);
+	}
+
+	public void bindAfterProxy(String key, HttpServletEvent event) {
+		afterProxy.put(key, event);
+	}
+
+	public void bindBeforeRequest(String key, HttpServletEvent event) {
+		beforeRequest.put(key, event);
+	}
+
+	public HttpServletEvent unbindBeforeRequest(String key) {
+		return beforeRequest.remove(key);
+	}
+
+	public void bindAfterRequest(String key, HttpServletEvent event) {
+		afterRequest.put(key, event);
+	}
+
+	public HttpServletEvent unbindAfterRequest(String key) {
+		return afterRequest.remove(key);
+	}
+
+	public HttpServletEvent unbindBeforeProxy(String key) {
+		return beforeProxy.remove(key);
+	}
+
+	public HttpServletEvent unbindAfterProxy(String key) {
+		return afterProxy.remove(key);
+	}
+
 	private void validate() throws Exception {
 		String pathURI = this.localRepositoryPath;
 		pathURI = pathURI.replace('\\', '/');
 
-		pathURI = removeStartSeparator(pathURI);
+		pathURI = NevamavenUtils.removeStartSeparator(pathURI);
 
 		pathURI = "file:///" + pathURI;
 
@@ -67,39 +105,36 @@ public class MavenServer {
 			throw new Exception("Path [" + pathURI + "] isn't a folder.");
 		}
 	}
-
-	private String removeStartSeparator(String pathURI) {
-		while (pathURI.startsWith("\\")) {
-			pathURI = pathURI.substring(1);
-		}
-		while (pathURI.startsWith("/")) {
-			pathURI = pathURI.substring(1);
-		}
-		return pathURI;
-	}
-
+ 
 	public void start() throws Exception {
 		server = new ByHandlerServer();
 
 		server.start(new FunctionalHandler(this::handle), this.port);
 	}
 
-	private void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-			throws IOException, ServletException {
+	private void handle(final String target, final Request baseRequest, final HttpServletRequest request,
+			final HttpServletResponse response) throws IOException, ServletException {
 
-		String requestURI = baseRequest.getRequestURI().toString();
+		this.beforeRequest.values().forEach(e -> e.exec(request, response));
 
-		handleByURI(requestURI, response);
+		handleByURI(request, response);
 
 		// antes estava apenas quando o arquivo vinha local, ver se isso vai dar
 		// algum problema se por sempre
 		baseRequest.setHandled(true);
 
+		this.afterRequest.values().forEach(e -> e.exec(request, response));
+
 	}
 
-	private void handleByURI(String requestURI, HttpServletResponse response) throws IOException {
+	private void handleByURI(HttpServletRequest request, HttpServletResponse response) throws IOException {
+
+		String requestURI = request.getRequestURI().toString();
+		
+		requestURI = NevamavenUtils.addStartSeparator(requestURI,"/");
+
 		StringBuffer resultPrint = new StringBuffer();
-		resultPrint.append("URI" + requestURI);
+		resultPrint.append("URI:" + requestURI);
 
 		boolean isSha1 = requestURI.endsWith(".sha1");
 		boolean ismd5 = requestURI.endsWith(".md5");
@@ -109,7 +144,7 @@ public class MavenServer {
 		if (!NevamavenUtils.exist(this.localRepositoryPath, requestURI)) {
 
 			if (!isSha1 && !ismd5) {
-				notFoundRequest(requestURI, response, resultPrint);
+				notFoundRequest(request, response, resultPrint);
 				return;
 
 			}
@@ -121,7 +156,7 @@ public class MavenServer {
 
 			boolean fileSourceNotFound = !NevamavenUtils.exist(this.localRepositoryPath, requestURIWithoutExtension);
 			if (fileSourceNotFound) {
-				notFoundRequest(requestURI, response, resultPrint);
+				notFoundRequest(request, response, resultPrint);
 				return;
 			}
 
@@ -208,14 +243,20 @@ public class MavenServer {
 		}
 	}
 
-	private void notFoundRequest(String requestUri, HttpServletResponse response, StringBuffer resultPrint)
+	private void notFoundRequest(HttpServletRequest request, HttpServletResponse response, StringBuffer resultPrint)
 			throws IOException {
 
-		String redirectURL = this.remoteRepositoryURL + requestUri;
+		this.beforeProxy.values().forEach(action -> action.exec(request, response));
+
+		String requestURI = request.getRequestURI().toString();
+
+		String redirectURL = this.remoteRepositoryURL + requestURI;
 		resultPrint.append("=>redirect to ");
 		resultPrint.append(redirectURL);
 
 		response.sendRedirect(redirectURL);
+
+		this.afterProxy.values().forEach(action -> action.exec(request, response));
 
 		// response.setStatus(HttpServletResponse.SC_NOT_FOUND);
 		return;

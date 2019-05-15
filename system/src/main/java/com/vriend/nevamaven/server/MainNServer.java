@@ -7,8 +7,6 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.lang3.math.NumberUtils;
 
-import com.vriend.nevamaven.NevamavenUtils;
-
 public class MainNServer {
 
 	private final static String PARAM_PORT = "p";
@@ -55,7 +53,7 @@ public class MainNServer {
 
 		String local = cmd.getOptionValue(PARAM_LOCAL);
 
-		String remote = cmd.getOptionValue(PARAM_REMOTE);
+		String remote = cmd.getOptionValue(PARAM_REMOTE, "http://central.maven.org/maven2");
 
 		MainNServer mns = new MainNServer(port, local, remote);
 
@@ -80,6 +78,14 @@ public class MainNServer {
 		System.out.println("Remote		" + this.remote);
 
 		server = new MavenServer(port, local, remote);
+
+		HttpServletEvent event = (req, res) -> {
+
+			System.out.println("Proxying URI : " + req.getRequestURI());
+
+		};
+
+		server.bindBeforeProxy("Proxy detect", event);
 
 		server.start();
 

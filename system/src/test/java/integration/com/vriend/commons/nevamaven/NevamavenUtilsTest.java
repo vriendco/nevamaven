@@ -75,6 +75,63 @@ public class NevamavenUtilsTest {
 	}
 
 	@Test
+	public void addStartSeparator() throws Exception {
+
+		Assert.assertEquals("\\testA\\test.txt", NevamavenUtils.addStartSeparator("testA\\test.txt", "\\"));
+		Assert.assertEquals("\\testA\\test.txt", NevamavenUtils.addStartSeparator("testA\\test.txt", "\\"));
+
+		Assert.assertEquals("\\testA\\test.txt", NevamavenUtils.addStartSeparator("\\testA\\test.txt", "\\"));
+		Assert.assertEquals("\\testA\\test.txt", NevamavenUtils.addStartSeparator("\\\\testA\\test.txt", "\\"));
+		Assert.assertEquals("\\testA\\test.txt", NevamavenUtils.addStartSeparator("\\\\\\testA\\test.txt", "\\"));
+
+		Assert.assertEquals("\\", NevamavenUtils.addStartSeparator("", "\\"));
+		Assert.assertEquals("\\", NevamavenUtils.addStartSeparator("/", "\\"));
+		Assert.assertEquals("\\", NevamavenUtils.addStartSeparator("//", "\\"));
+		Assert.assertEquals("\\", NevamavenUtils.addStartSeparator("///", "\\"));
+	}
+
+	
+	@Test
+	public void addEndSeparator() throws Exception {
+
+		Assert.assertEquals("testA\\test.txt\\", NevamavenUtils.addEndSeparator("testA\\test.txt", "\\"));
+
+		Assert.assertEquals("\\testA\\test.txt\\", NevamavenUtils.addEndSeparator("\\testA\\test.txt\\", "\\"));
+		Assert.assertEquals("\\testA\\test.txt\\", NevamavenUtils.addEndSeparator("\\testA\\test.txt\\\\", "\\"));
+
+		Assert.assertEquals("\\", NevamavenUtils.addEndSeparator("", "\\"));
+		Assert.assertEquals("\\", NevamavenUtils.addEndSeparator("/", "\\"));
+		Assert.assertEquals("\\", NevamavenUtils.addEndSeparator("\\", "\\"));
+		Assert.assertEquals("\\", NevamavenUtils.addEndSeparator("//", "\\"));
+		Assert.assertEquals("\\", NevamavenUtils.addEndSeparator("///", "\\"));
+	}
+
+	@Test
+	public void removeStartSeparator() throws Exception {
+
+		Assert.assertEquals("testA\\test.txt", NevamavenUtils.removeStartSeparator("testA\\test.txt"));
+		Assert.assertEquals("testA\\test.txt", NevamavenUtils.removeStartSeparator("testA\\test.txt"));
+
+		Assert.assertEquals("testA/test.txt", NevamavenUtils.removeStartSeparator("/testA/test.txt"));
+		Assert.assertEquals("testA/test.txt", NevamavenUtils.removeStartSeparator("//testA/test.txt"));
+		Assert.assertEquals("testA/test.txt", NevamavenUtils.removeStartSeparator("///testA/test.txt"));
+
+		Assert.assertEquals("testA\\test.txt", NevamavenUtils.removeStartSeparator("\\testA\\test.txt"));
+		Assert.assertEquals("testA\\test.txt", NevamavenUtils.removeStartSeparator("\\\\testA\\test.txt"));
+		Assert.assertEquals("testA\\test.txt", NevamavenUtils.removeStartSeparator("\\\\\\testA\\test.txt"));
+
+		Assert.assertEquals("", NevamavenUtils.removeStartSeparator(""));
+		Assert.assertEquals("", NevamavenUtils.removeStartSeparator("/"));
+		Assert.assertEquals("", NevamavenUtils.removeStartSeparator("//"));
+		Assert.assertEquals("", NevamavenUtils.removeStartSeparator("///"));
+
+		Assert.assertEquals("", NevamavenUtils.removeStartSeparator(""));
+		Assert.assertEquals("", NevamavenUtils.removeStartSeparator("\\"));
+		Assert.assertEquals("", NevamavenUtils.removeStartSeparator("\\\\"));
+		Assert.assertEquals("", NevamavenUtils.removeStartSeparator("\\\\\\"));
+	}
+
+	@Test
 	public void toHexFormat() throws Exception {
 
 		byte sha1[] = { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97,

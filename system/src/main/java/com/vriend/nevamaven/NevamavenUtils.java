@@ -40,10 +40,40 @@ public class NevamavenUtils {
 		return sb.toString();
 	}
 
+	public static String addStartSeparator(String path, String separator) {
+		path = removeStartSeparator(path);
+		return separator + path;
+	}
+
+	public static String removeStartSeparator(String path) {
+		while (path.startsWith("\\") || path.startsWith("/")) {
+			return removeStartSeparator(path.substring(1));
+		}
+
+		return path;
+	}
+
+	public static String removeEndSeparator(String path) {
+		while (path.endsWith("\\") || path.endsWith("/")) {
+			return removeEndSeparator(StringUtils.left(path, path.length() - 1));
+		}
+
+		return path;
+	}
+
+	public static String addEndSeparator(String path, String separator) {
+		path = removeEndSeparator(path);
+		return path + separator;
+	}
+
 	public static boolean exist(String resourcePath, String requestURI) throws IOException {
 
-		String pathURI = resourcePath + requestURI;
+		requestURI = NevamavenUtils.removeStartSeparator(requestURI);
+
+		String pathURI = resourcePath +  NevamavenUtils.addStartSeparator(requestURI,"/");
 		pathURI = pathURI.replace('\\', '/');
+
+		pathURI = NevamavenUtils.removeStartSeparator(pathURI);
 
 		URI fileUri = null;
 		try {
@@ -56,6 +86,5 @@ public class NevamavenUtils {
 
 		return fileFromURI.exists();
 	}
-	
- 
+
 }
