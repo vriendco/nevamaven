@@ -78,53 +78,54 @@ public class MavenServerTest {
 		Assert.assertEquals("Xisto123", response.getOutput());
 
 	}
+
 	@Test
 	public void beforeProxy() throws WSClientException, InterruptedException {
 
 		final StringBuffer out = new StringBuffer();
 
-		HttpServletEvent event =  (req, res) -> out.append(req.getRequestURI());
-		 
-		server.bindBeforeProxy("beforeProxy",event);
+		HttpServletEvent event = (req, res) -> out.append(req.getRequestURI());
+
+		server.bindBeforeProxy("beforeProxy", event);
 
 		WSClientHttpURLConnection client = new WSClientHttpURLConnection();
 
 		client.exec("http://localhost:7777/test.txt");
 
 		Assert.assertEquals("", out.toString());
-		
+
 		client.exec("http://localhost:7777/testNotFound.txt");
-		
+
 		Assert.assertEquals("/testNotFound.txt", out.toString());
-		
+
 		HttpServletEvent eventDeleted = server.unbindBeforeProxy("beforeProxy");
-		
-		Assert.assertEquals(event.hashCode(),eventDeleted.hashCode());
+
+		Assert.assertEquals(event.hashCode(), eventDeleted.hashCode());
 
 	}
-	
+
 	@Test
 	public void afterProxy() throws WSClientException, InterruptedException {
 
 		final StringBuffer out = new StringBuffer();
 
-		HttpServletEvent event =  (req, res) -> out.append(req.getRequestURI());
-		 
-		server.bindAfterProxy("afterProxy",event);
+		HttpServletEvent event = (req, res) -> out.append(req.getRequestURI());
+
+		server.bindAfterProxy("afterProxy", event);
 
 		WSClientHttpURLConnection client = new WSClientHttpURLConnection();
 
 		client.exec("http://localhost:7777/test.txt");
 
 		Assert.assertEquals("", out.toString());
-		
+
 		client.exec("http://localhost:7777/testNotFound.txt");
-		
+
 		Assert.assertEquals("/testNotFound.txt", out.toString());
-		
+
 		HttpServletEvent eventDeleted = server.unbindAfterProxy("afterProxy");
-		
-		Assert.assertEquals(event.hashCode(),eventDeleted.hashCode());
+
+		Assert.assertEquals(event.hashCode(), eventDeleted.hashCode());
 
 	}
 
@@ -133,20 +134,66 @@ public class MavenServerTest {
 
 		final StringBuffer out = new StringBuffer();
 
-		HttpServletEvent event =  (req, res) -> out.append(req.getRequestURI());
-		 
-		server.bindBeforeRequest("beforeRequest",event);
+		HttpServletEvent event = (req, res) -> out.append(req.getRequestURI());
+
+		server.bindBeforeRequest("beforeRequest", event);
 
 		WSClientHttpURLConnection client = new WSClientHttpURLConnection();
 
 		client.exec("http://localhost:7777/test.txt");
 
 		Assert.assertEquals("/test.txt", out.toString());
-		
-		HttpServletEvent eventDeleted = server.unbindBeforeRequest("beforeRequest");
-		
-		Assert.assertEquals(event.hashCode(),eventDeleted.hashCode());
 
+		HttpServletEvent eventDeleted = server.unbindBeforeRequest("beforeRequest");
+
+		Assert.assertEquals(event.hashCode(), eventDeleted.hashCode());
+
+	}
+
+	@Test
+	public void beforeReadFile() throws WSClientException, InterruptedException {
+		final StringBuffer out = new StringBuffer();
+
+		HttpServletEvent event = (req, res) -> out.append(req.getRequestURI());
+
+		server.bindBeforeReadFile("beforeReadFile", event);
+
+		WSClientHttpURLConnection client = new WSClientHttpURLConnection();
+
+		client.exec("http://localhost:7777/testNotExist.txt");
+
+		Assert.assertEquals("", out.toString());
+
+		client.exec("http://localhost:7777/test.txt");
+
+		Assert.assertEquals("/test.txt", out.toString());
+
+		HttpServletEvent eventDeleted = server.unbindBeforeReadFile("beforeReadFile");
+
+		Assert.assertEquals(event.hashCode(), eventDeleted.hashCode());
+	}
+
+	@Test
+	public void afterReadFile() throws WSClientException, InterruptedException {
+		final StringBuffer out = new StringBuffer();
+
+		HttpServletEvent event = (req, res) -> out.append(req.getRequestURI());
+
+		server.bindBeforeReadFile("beforeReadFile", event);
+
+		WSClientHttpURLConnection client = new WSClientHttpURLConnection();
+
+		client.exec("http://localhost:7777/testNotExist.txt");
+
+		Assert.assertEquals("", out.toString());
+
+		client.exec("http://localhost:7777/test.txt");
+
+		Assert.assertEquals("/test.txt", out.toString());
+
+		HttpServletEvent eventDeleted = server.unbindBeforeReadFile("beforeReadFile");
+
+		Assert.assertEquals(event.hashCode(), eventDeleted.hashCode());
 	}
 
 	@Test
@@ -154,22 +201,21 @@ public class MavenServerTest {
 
 		final StringBuffer out = new StringBuffer();
 
-		HttpServletEvent event =  (req, res) -> out.append(req.getRequestURI());
-		 
-		server.bindBeforeRequest("afterRequest",event);
+		HttpServletEvent event = (req, res) -> out.append(req.getRequestURI());
+
+		server.bindBeforeRequest("afterRequest", event);
 
 		WSClientHttpURLConnection client = new WSClientHttpURLConnection();
 
 		client.exec("http://localhost:7777/test.txt");
 
 		Assert.assertEquals("/test.txt", out.toString());
-		
+
 		HttpServletEvent eventDeleted = server.unbindBeforeRequest("afterRequest");
-		
-		Assert.assertEquals(event.hashCode(),eventDeleted.hashCode());
+
+		Assert.assertEquals(event.hashCode(), eventDeleted.hashCode());
 
 	}
-	 
 
 	@Test
 	public void sha1() throws WSClientException, InterruptedException {

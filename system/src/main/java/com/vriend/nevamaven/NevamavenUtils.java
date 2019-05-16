@@ -40,6 +40,11 @@ public class NevamavenUtils {
 		return sb.toString();
 	}
 
+	public static String buildAttributePrintable(String key, String value) {
+		String att = StringUtils.rightPad(key, 30) + StringUtils.rightPad(":", 5) + value;
+		return att;
+	}
+	
 	public static String addStartSeparator(String path, String separator) {
 		path = removeStartSeparator(path);
 		return separator + path;

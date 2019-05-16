@@ -35,8 +35,24 @@ public class NevamavenUtilsTest {
 				staticPath.endsWith(expected));
 	}
 
-	// depois o mavenserver funcionar usando a nova funcao de md5 e sha1
-	// criar testes apropriados
+	@Test
+	public void buildAttributePrintable() {
+
+		String ret = NevamavenUtils.buildAttributePrintable("test", "value");
+		String expected = "test                          :    value";
+
+		Assert.assertEquals(expected, ret);
+		ret = NevamavenUtils.buildAttributePrintable("", "");
+		expected = "                              :    ";
+
+		Assert.assertEquals(expected, ret);
+		
+		Assert.assertEquals(expected, ret);
+		ret = NevamavenUtils.buildAttributePrintable("abcdefghijklmnopqrstuvxzabcdefghijklmnopqrstuvxz", "teste");
+		expected = "abcdefghijklmnopqrstuvxzabcdefghijklmnopqrstuvxz:    teste";
+
+		Assert.assertEquals(expected, ret);
+	}
 
 	@Test
 	public void md5() throws Exception {
@@ -90,7 +106,6 @@ public class NevamavenUtilsTest {
 		Assert.assertEquals("\\", NevamavenUtils.addStartSeparator("///", "\\"));
 	}
 
-	
 	@Test
 	public void addEndSeparator() throws Exception {
 

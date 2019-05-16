@@ -7,11 +7,14 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.lang3.math.NumberUtils;
 
+import com.vriend.nevamaven.NevamavenUtils;
+
 public class MainNServer {
 
 	private final static String PARAM_PORT = "p";
 	private final static String PARAM_LOCAL = "l";
 	private final static String PARAM_REMOTE = "r";
+	private final static String PARAM_VERBOSE = "v";
 
 	private MavenServer server = null;
 
@@ -20,6 +23,8 @@ public class MainNServer {
 	private String local = null;
 
 	private String remote = null;
+
+	private boolean verbose = false;
 
 	public static void main(String argsv[]) throws Exception {
 
@@ -55,7 +60,9 @@ public class MainNServer {
 
 		String remote = cmd.getOptionValue(PARAM_REMOTE, "http://central.maven.org/maven2");
 
-		MainNServer mns = new MainNServer(port, local, remote);
+		boolean verbose = cmd.hasOption(PARAM_VERBOSE);
+
+		MainNServer mns = new MainNServer(port, local, remote, verbose);
 
 		mns.start();
 
@@ -65,10 +72,16 @@ public class MainNServer {
 
 	}
 
-	public MainNServer(Integer port, String local, String remote) throws Exception {
+	public MainNServer(Integer port, String local, String remote, boolean verbose) throws Exception {
 		this.port = port;
 		this.local = local;
 		this.remote = remote;
+		this.verbose = verbose;
+	}
+
+	private void printAttribute(String attribute, String value) {
+		String msg = NevamavenUtils.buildAttributePrintable(attribute, value);
+		System.out.println(msg);
 	}
 
 	public void start() throws Exception {
@@ -79,16 +92,26 @@ public class MainNServer {
 
 		server = new MavenServer(port, local, remote);
 
+		if (this.verbose) {
+			verbosify();
+		}
+		
+		server.start();
+
+	}
+
+	private void verbosify() {
 		HttpServletEvent event = (req, res) -> {
-
-			System.out.println("Proxying URI : " + req.getRequestURI());
-
+			printAttribute("Proxying URI", req.getRequestURI());
 		};
 
 		server.bindBeforeProxy("Proxy detect", event);
 
-		server.start();
+		event = (req, res) -> {
+			printAttribute("Local file URI", req.getRequestURI());
+		};
 
+		server.bindBeforeReadFile("Local file detect", event);
 	}
 
 	public void stop() throws Exception {
@@ -103,6 +126,7 @@ public class MainNServer {
 		options.addOption(PARAM_PORT, true, "maven server port, default 80");
 		options.addOption(PARAM_LOCAL, true, "required local repository path");
 		options.addOption(PARAM_REMOTE, true, "required remote proxy maven server");
+		options.addOption(PARAM_VERBOSE, false, "verbose mode, print all transfer");
 
 		return options;
 	}

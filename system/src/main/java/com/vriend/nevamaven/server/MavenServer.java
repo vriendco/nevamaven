@@ -33,6 +33,8 @@ public class MavenServer {
 	private Map<String, HttpServletEvent> beforeProxy = new HashMap<>();
 	private Map<String, HttpServletEvent> afterProxy = new HashMap<>();
 	private Map<String, HttpServletEvent> afterRequest = new HashMap<>();
+	private Map<String, HttpServletEvent> beforeReadFile = new HashMap<>();
+	private Map<String, HttpServletEvent> afterReadFile = new HashMap<>();
 
 	public MavenServer(int port, String localRepositoryPath, String remoteRepositoryURL) throws Exception {
 
@@ -50,6 +52,22 @@ public class MavenServer {
 
 	public void bindAfterProxy(String key, HttpServletEvent event) {
 		afterProxy.put(key, event);
+	}
+
+	public void bindBeforeReadFile(String key, HttpServletEvent event) {
+		beforeReadFile.put(key, event);
+	}
+
+	public void bindAfterReadFile(String key, HttpServletEvent event) {
+		afterReadFile.put(key, event);
+	}
+
+	public HttpServletEvent unbindAfterReadFile(String key) {
+		return afterReadFile.remove(key);
+	}
+
+	public HttpServletEvent unbindBeforeReadFile(String key) {
+		return beforeReadFile.remove(key);
 	}
 
 	public void bindBeforeRequest(String key, HttpServletEvent event) {
@@ -105,7 +123,7 @@ public class MavenServer {
 			throw new Exception("Path [" + pathURI + "] isn't a folder.");
 		}
 	}
- 
+
 	public void start() throws Exception {
 		server = new ByHandlerServer();
 
@@ -130,21 +148,16 @@ public class MavenServer {
 	private void handleByURI(HttpServletRequest request, HttpServletResponse response) throws IOException {
 
 		String requestURI = request.getRequestURI().toString();
-		
-		requestURI = NevamavenUtils.addStartSeparator(requestURI,"/");
 
-		StringBuffer resultPrint = new StringBuffer();
-		resultPrint.append("URI:" + requestURI);
+		requestURI = NevamavenUtils.addStartSeparator(requestURI, "/");
 
 		boolean isSha1 = requestURI.endsWith(".sha1");
 		boolean ismd5 = requestURI.endsWith(".md5");
 
-		String pathURI = this.localRepositoryPath + requestURI;
-
 		if (!NevamavenUtils.exist(this.localRepositoryPath, requestURI)) {
 
 			if (!isSha1 && !ismd5) {
-				notFoundRequest(request, response, resultPrint);
+				notFoundRequest(request, response);
 				return;
 
 			}
@@ -156,16 +169,14 @@ public class MavenServer {
 
 			boolean fileSourceNotFound = !NevamavenUtils.exist(this.localRepositoryPath, requestURIWithoutExtension);
 			if (fileSourceNotFound) {
-				notFoundRequest(request, response, resultPrint);
+				notFoundRequest(request, response);
 				return;
 			}
 
 			buildChecksumFiles(this.localRepositoryPath, requestURI);
 		}
 
-		foundRequest(pathURI, response, resultPrint);
-
-		System.out.println(resultPrint.toString());
+		foundRequest(request, response);
 	}
 
 	private void buildChecksumFiles(String repositoryPath, String requestURI) throws IOException {
@@ -223,10 +234,12 @@ public class MavenServer {
 		}
 	}
 
-	private void foundRequest(String filePath, HttpServletResponse response, StringBuffer resultPrint)
-			throws IOException {
+	private void foundRequest(HttpServletRequest request, HttpServletResponse response) throws IOException {
 
-		resultPrint.append("=>200");
+		String requestURI = request.getRequestURI();
+		String filePath = this.localRepositoryPath + NevamavenUtils.addStartSeparator(requestURI, "/");
+
+		this.beforeReadFile.values().forEach(e -> e.exec(request, response));
 
 		response.setContentType("application/jar");
 		response.setStatus(HttpServletResponse.SC_OK);
@@ -237,22 +250,21 @@ public class MavenServer {
 
 			IOUtils.copy(input, response.getOutputStream());
 
+			this.afterReadFile.values().forEach(e -> e.exec(request, response));
+
 			return;
 		} catch (Exception e) {
 			throw new IOException(e);
 		}
 	}
 
-	private void notFoundRequest(HttpServletRequest request, HttpServletResponse response, StringBuffer resultPrint)
-			throws IOException {
+	private void notFoundRequest(HttpServletRequest request, HttpServletResponse response) throws IOException {
 
 		this.beforeProxy.values().forEach(action -> action.exec(request, response));
 
 		String requestURI = request.getRequestURI().toString();
 
 		String redirectURL = this.remoteRepositoryURL + requestURI;
-		resultPrint.append("=>redirect to ");
-		resultPrint.append(redirectURL);
 
 		response.sendRedirect(redirectURL);
 
