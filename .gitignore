@@ -2,6 +2,7 @@
 
 #build files
 system/build/*
+system/target/*
 system/.*
 
 #temporary files
@@ -12,8 +13,7 @@ system/tomcat*
 classes
 *.class
 *.dll
-*.exe 
-bin
+*.exe
 lib
 *.db
 .svn
